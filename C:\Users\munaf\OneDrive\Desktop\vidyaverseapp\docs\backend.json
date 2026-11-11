@@ -1,0 +1,185 @@
+{
+  "entities": {
+    "SchoolProfile": {
+      "title": "SchoolProfile",
+      "type": "object",
+      "description": "Represents the single profile for the school.",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "affiliationNo": { "type": "string" },
+        "schoolCode": { "type": "string" },
+        "udiseCode": { "type": "string" },
+        "address": { "type": "string" },
+        "logoUrl": { "type": "string", "format": "uri" },
+        "principalName": { "type": "string" },
+        "academicYear": { "type": "string" }
+      },
+      "required": ["id", "name"]
+    },
+    "User": {
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user in the system, linked to a role.",
+      "properties": {
+        "id": { "type": "string", "description": "Matches the Firebase Auth UID." },
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string", "enum": ["admin", "principal", "teacher"] }
+      },
+      "required": ["id", "email", "role"]
+    },
+    "Student": {
+      "title": "Student",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "grNo": { "type": "string" },
+        "name": { "type": "string" },
+        "fatherName": { "type": "string" },
+        "motherName": { "type": "string" },
+        "dob": { "type": "string", "format": "date" },
+        "gender": { "type": "string" },
+        "address": { "type": "string" },
+        "class": { "type": "string" },
+        "section": { "type": "string" },
+        "rollNo": { "type": "string" },
+        "mobile": { "type": "string" },
+        "photoUrl": { "type": "string", "format": "uri" },
+        "status": { "type": "string", "enum": ["Active", "LC Issued"] },
+        "totalFees": { "type": "number" },
+        "feesPaid": { "type": "number" }
+      },
+      "required": ["id", "grNo", "name", "dob", "gender", "class", "section", "status", "totalFees", "feesPaid"]
+    },
+    "Teacher": {
+      "title": "Teacher",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "subject": { "type": "string" },
+        "mobile": { "type": "string" },
+        "email": { "type": "string", "format": "email"},
+        "photoUrl": { "type": "string", "format": "uri" },
+        "status": { "type": "string", "enum": ["Active", "Inactive"] }
+      },
+      "required": ["id", "name", "subject", "status"]
+    },
+    "SchoolClass": {
+        "title": "SchoolClass",
+        "type": "object",
+        "properties": {
+            "id": { "type": "string" },
+            "name": { "type": "string" },
+            "sections": { "type": "array", "items": { "type": "string" }}
+        },
+        "required": ["id", "name", "sections"]
+    },
+    "Attendance": {
+      "title": "Attendance",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "studentId": { "type": "string" },
+        "status": { "type": "string", "enum": ["present", "absent"] },
+        "class": { "type": "string" }
+      },
+      "required": ["id", "date", "studentId", "status", "class"]
+    },
+    "TeacherAttendance": {
+      "title": "TeacherAttendance",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "teacherId": { "type": "string" },
+        "status": { "type": "string", "enum": ["present", "absent"] }
+      },
+      "required": ["id", "date", "teacherId", "status"]
+    },
+    "FeePayment": {
+      "title": "FeePayment",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "studentId": { "type": "string" },
+        "amount": { "type": "number" },
+        "date": { "type": "string", "format": "date-time" },
+        "receiptNo": { "type": "string" }
+      },
+      "required": ["id", "studentId", "amount", "date", "receiptNo"]
+    },
+    "Expense": {
+      "title": "Expense",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "category": { "type": "string" },
+        "description": { "type": "string" },
+        "amount": { "type": "number" }
+      },
+      "required": ["id", "date", "category", "description", "amount"]
+    },
+    "DeadStock": {
+      "title": "DeadStock",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "itemName": { "type": "string" },
+        "quantity": { "type": "number" },
+        "purchaseDate": { "type": "string", "format": "date" },
+        "description": { "type": "string" },
+        "price": { "type": "number" },
+        "status": { "type": "string", "enum": ["In Stock", "Disposed", "Sold", "Written Off"] }
+      },
+      "required": ["id", "itemName", "quantity", "purchaseDate", "status"]
+    }
+  },
+  "auth": {
+    "providers": ["password", "anonymous"]
+  },
+  "firestore": {
+    "/users/{userId}": {
+        "schema": { "$ref": "#/entities/User" },
+        "description": "Stores all users of the platform, regardless of role."
+    },
+    "/school_profile/main": {
+        "schema": { "$ref": "#/entities/SchoolProfile" },
+        "description": "Singleton document for the school's main profile."
+    },
+    "/students/{studentId}": {
+      "schema": { "$ref": "#/entities/Student" },
+      "description": "Students belonging to the school."
+    },
+    "/teachers/{teacherId}": {
+      "schema": { "$ref": "#/entities/Teacher" },
+      "description": "Teachers belonging to the school."
+    },
+    "/classes/{classId}": {
+        "schema": { "$ref": "#/entities/SchoolClass" },
+        "description": "Classes and sections for the school."
+    },
+    "/attendance/{attendanceId}": {
+        "schema": { "$ref": "#/entities/Attendance" },
+        "description": "Student attendance for the school."
+    },
+    "/teacher_attendance/{attendanceId}": {
+        "schema": { "$ref": "#/entities/TeacherAttendance" },
+        "description": "Teacher attendance for the school."
+    },
+    "/fees/{feeId}": {
+        "schema": { "$ref": "#/entities/FeePayment" },
+        "description": "Fee payments for the school."
+    },
+    "/expenses/{expenseId}": {
+        "schema": { "$ref": "#/entities/Expense" },
+        "description": "Expenses for the school."
+    },
+    "/dead_stock/{itemId}": {
+        "schema": { "$ref": "#/entities/DeadStock" },
+        "description": "Dead stock items for the school."
+    }
+  }
+}

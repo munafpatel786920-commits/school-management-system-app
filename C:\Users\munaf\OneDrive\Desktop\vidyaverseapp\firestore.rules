@@ -1,0 +1,116 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // HELPER FUNCTIONS
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && getUserRole() == 'admin';
+    }
+    
+    function isPrincipal() {
+      return isSignedIn() && (getUserRole() == 'principal' || isAdmin());
+    }
+    
+    function isTeacher() {
+      return isSignedIn() && (getUserRole() == 'teacher' || isPrincipal());
+    }
+
+    function isAccountant() {
+      return isSignedIn() && (getUserRole() == 'accountant' || isAdmin());
+    }
+    
+    function isSchoolMember() {
+        return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+    
+    // SETUP: Allow creating the first admin user
+    match /admin_setup/lock {
+      allow read: if true;
+      allow create: if !exists(/databases/$(database)/documents/admin_setup/lock);
+      allow delete: if isAdmin();
+    }
+
+    // USER MANAGEMENT
+    match /users/{userId} {
+      // A user can read their own profile. Admins can read any profile and list all users.
+      allow get, list: if isSchoolMember() && (request.auth.uid == userId || isAdmin());
+
+      // Admins can delete any user, including themselves for master reset.
+      allow delete: if isAdmin();
+      
+      // Update: Admins can update any user, but cannot make another user an admin or demote themselves.
+      allow update: if isAdmin() && request.resource.data.role != 'admin' && !(resource.data.role == 'admin' && request.resource.data.role != 'admin');
+
+      // Create: Admins can create non-admin users. First user creation is special.
+      allow create: if 
+        // Case 1: First admin setup
+        (isSignedIn() && !exists(/databases/$(database)/documents/admin_setup/lock) && request.resource.data.role == 'admin') ||
+        // Case 2: Admin creating other users
+        (isAdmin() && request.resource.data.role != 'admin');
+    }
+    
+    // SCHOOL DATA
+    match /school_profile/main {
+      allow read: if isSchoolMember();
+      allow write: if isAdmin() || isPrincipal();
+    }
+    
+    match /students/{docId} {
+      allow read: if isSchoolMember();
+      allow write: if isAdmin() || isPrincipal();
+    }
+    match /teachers/{docId} {
+      allow read: if isSchoolMember();
+      allow write: if isAdmin() || isPrincipal();
+    }
+     match /classes/{docId} {
+      allow read: if isSchoolMember();
+      allow write: if isAdmin() || isPrincipal();
+    }
+    match /roster/{docId} {
+      allow read: if isSchoolMember();
+      allow write: if isAdmin() || isPrincipal() || isTeacher();
+    }
+    match /attendance/{docId} {
+      allow read: if isSchoolMember();
+      allow write: if isAdmin() || isPrincipal() || isTeacher();
+    }
+    match /teacher_attendance/{docId} {
+      allow read: if isSchoolMember();
+      allow write: if isAdmin() || isPrincipal() || isTeacher();
+    }
+     match /fees/{docId} {
+      allow read: if isSchoolMember();
+      allow write: if isAdmin() || isAccountant();
+    }
+    match /expenses/{docId} {
+      allow read: if isSchoolMember();
+      allow write: if isAdmin() || isAccountant();
+    }
+    match /dead_stock/{itemId} {
+      allow read: if isSchoolMember();
+      allow write: if isAdmin() || isAccountant();
+    }
+     match /exam/{docId} {
+      allow read: if isSchoolMember();
+      allow write: if isTeacher();
+    }
+    match /documents/{docId} {
+      allow read: if isSchoolMember();
+      allow write: if isAdmin() || isPrincipal();
+    }
+    match /reports/{docId} {
+      allow read: if isSchoolMember();
+      allow write: if isAdmin() || isPrincipal();
+    }
+  }
+}

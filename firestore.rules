@@ -1,0 +1,102 @@
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper Functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isSuperAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'patelmunaf90@gmail.com' ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super_admin' || 
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'))
+      );
+    }
+
+    // System configurations and initialization
+    match /admin_setup/{docId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /platform_announcements/{docId} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
+
+    match /plans/{planId} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
+
+    match /activation_keys/{docId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // User management
+    match /users/{userId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // School management
+    match /schools/{schoolId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Operational collections
+    match /students/{docId} {
+      allow read, write: if true;
+    }
+
+    match /teachers/{docId} {
+      allow read, write: if true;
+    }
+
+    match /classes/{docId} {
+      allow read, write: if true;
+    }
+
+    match /fees/{docId} {
+      allow read, write: if true;
+    }
+
+    match /expenses/{docId} {
+      allow read, write: if true;
+    }
+
+    match /dead_stock/{docId} {
+      allow read, write: if true;
+    }
+
+    match /attendance/{docId} {
+      allow read, write: if true;
+    }
+
+    match /teacher_attendance/{docId} {
+      allow read, write: if true;
+    }
+
+    match /exam_schedules/{docId} {
+      allow read, write: if true;
+    }
+
+    match /sms_logs/{docId} {
+      allow read, write: if true;
+    }
+
+    // Default catch-all for any other collection or subcollection
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
+
+
